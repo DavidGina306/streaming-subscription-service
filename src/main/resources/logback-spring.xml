@@ -2,7 +2,7 @@
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>
-                {"time":"%d{yyyy-MM-dd HH:mm:ss.SSS}","correlationId":"%X{correlationId:-}","level":"%level","appName":"soma-vendas", "thread": "%thread", "class": "%logger{40}", "message": "%message%throwable"}%n
+                {"time":"%d{yyyy-MM-dd HH:mm:ss.SSS}","correlationId":"%X{correlationId:-}","level":"%level","appName":"streaming-subscription-service", "thread": "%thread", "class": "%logger{40}", "message": "%message%throwable"}%n
             </pattern>
             <charset>utf8</charset>
         </encoder>
