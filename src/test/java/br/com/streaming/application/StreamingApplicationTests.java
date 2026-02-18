@@ -1,4 +1,4 @@
-package br.com.hering.somavendas;
+package br.com.streaming.application;
 
 import org.springframework.boot.test.context.SpringBootTest;
 

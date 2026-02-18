@@ -4,6 +4,7 @@ package br.com.streaming.application.infrastructure.adapters.inbound.rest;
 import br.com.streaming.application.ports.inbound.CreateSubscriptionUseCase;
 import br.com.streaming.application.ports.inbound.CancelSubscriptionUseCase; // Novo Port
 import br.com.streaming.application.core.domain.Subscription;
+import br.com.streaming.application.infrastructure.adapters.inbound.rest.dto.SubscriptionResponse;
 import lombok.RequiredArgsConstructor;
 
 import java.util.UUID;
@@ -24,12 +25,14 @@ public class SubscriptionController {
 
     private final CreateSubscriptionUseCase createSubscriptionUseCase;
     private final CancelSubscriptionUseCase cancelSubscriptionUseCase;
-
+    
     @PostMapping
-    @Operation(summary = "Cria uma nova assinatura", description = "Valida se o usuário já possui plano ativo e inicia a cobrança.")
-    public ResponseEntity<Subscription> create(@RequestBody SubscriptionRequest request) {
+    @Operation(summary = "Cria uma nova assinatura")
+    public ResponseEntity<SubscriptionResponse> create(@RequestBody SubscriptionRequest request) {
         var subscription = createSubscriptionUseCase.execute(request.getUserId(), request.getPlan());
-        return ResponseEntity.status(HttpStatus.CREATED).body(subscription);
+        
+        // Retornamos o DTO em vez da Entidade
+        return ResponseEntity.status(HttpStatus.CREATED).body(new SubscriptionResponse(subscription));
     }
 
     @PatchMapping("/{id}/cancel")

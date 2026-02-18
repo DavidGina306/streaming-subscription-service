@@ -5,9 +5,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import br.com.streaming.application.core.domain.Subscription;
+import br.com.streaming.application.core.domain.exceptions.BusinessException;
 import br.com.streaming.application.ports.inbound.RenewSubscriptionUseCase;
-import br.com.streaming.application.ports.outbound.PaymentGatewayPort;
-import br.com.streaming.application.ports.outbound.SubscriptionRepositoryPort;
 import lombok.RequiredArgsConstructor;
 
 
@@ -25,7 +24,7 @@ public class RenewSubscriptionInteractor implements RenewSubscriptionUseCase {
     @Override
     public void execute(UUID subscriptionId) {
         Subscription subscription = repositoryPort.findById(subscriptionId)
-                .orElseThrow(() -> new RuntimeException("Subscription not found"));
+                .orElseThrow(() -> new BusinessException("Subscription not found"));
 
         boolean success = paymentPort.charge(subscription.getUserId(), subscription.getPlan());
         if (success) {
