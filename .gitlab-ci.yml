@@ -1,0 +1,214 @@
+include:
+  - project: 'ciahering1/arquitetura-corporativa/modulos-gitlab'
+    ref: main
+    file: '.gitlab/sonarcli/sonarcli-template.gitlab-ci.yml'
+
+default:
+  tags: ['runner-local-shared-east1']
+
+image: docker:latest
+# When using dind, it's wise to use the overlayfs driver for
+# improved performance.
+variables:
+  DOCKER_DRIVER: overlay
+  DOCKER_VERSION: "" #Definmida no estagio "create"
+  MAVEN_CLI_OPTS: "--errors --fail-at-end --show-version --batch-mode"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  M2_HOME: "/opt/maven"
+  MAVEN_HOME: "/opt/maven"
+  ###################################################################
+  ## As variaveis abaixo podem ser alteradas de acordo com o projeto ##
+  ###################################################################
+  TARGETCPU: 60
+  MAXREPLICAS: 1
+  MINREPLICAS: 1
+  #  NAMESPACE: examples
+  NAMESPACE_PRD: soma-vendas
+  NAMESPACE_HML: ""
+  NAMESPACE_DEV: "soma-vendas-dev"
+# Definir Branchs não master para deploy
+  BRANCH_HML: ""
+  BRANCH_DEV: develop
+
+services:
+  - name: docker:dind
+
+stages:
+  - sonar-scan
+  - version
+  - build
+  - test
+  - create
+  - deploy-dev
+  - deploy-prd
+
+.prerequisites:
+  before_script:
+    - export PATH="${PATH}:/opt/gtk/bin:${M2_HOME}/bin"
+    - echo $PATH
+    - apk add openjdk17
+    - apk add gettext
+    - wget https://dlcdn.apache.org/maven/maven-3/3.8.8/binaries/apache-maven-3.8.8-bin.tar.gz -P /tmp
+    - tar xf /tmp/apache-maven-*.tar.gz -C /opt
+    - ln -s /opt/apache-maven-3.8.8 /opt/maven
+################################################################    
+#Verifica a branch e seleciona o agente e o namespacede deploy #
+#Namespaces atual:                                             #
+#  NAMESPACE_PRD: examples                                     #
+#  NAMESPACE_HML: ""                                           #
+#  NAMESPACE_DEV: ""                                           #
+#  BRANCH_HML: deploy_hml                                      #
+#  BRANCH_DEV: deploy_dev                                      #
+################################################################
+    - |-
+      if [ "$CI_DEFAULT_BRANCH" == "$CI_COMMIT_BRANCH" ]
+      then
+        echo "REGISTRY_AGENT=$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:k8s-$CI_PROJECT_NAME-agent" >> build.env
+        echo "NAMESPACE=$NAMESPACE_PRD" >> build.env
+
+      elif [ "$CI_COMMIT_BRANCH" == "$BRANCH_HML" ];
+      then
+        echo "REGISTRY_AGENT=$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:k8s-$CI_PROJECT_NAME-agent-hml" >> build.env
+        echo "NAMESPACE=$NAMESPACE_HML" >> build.env
+
+      elif [ "$CI_COMMIT_BRANCH" == "$BRANCH_DEV" ];
+      then
+        echo "REGISTRY_AGENT=$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:k8s-$CI_PROJECT_NAME-agent-dev" >> build.env
+        echo "NAMESPACE=$NAMESPACE_DEV" >> build.env
+      else
+        echo "Agente não definido"
+      fi
+    - echo $CI_COMMIT_BRANCH
+
+build-job:
+  stage: build
+  extends: .prerequisites
+  script:
+    - echo $CI_PROJECT_PATH
+    - mvn -version
+    - mvn clean package $MAVEN_CLI_OPTS
+    #Definindo variaveis de criação de imagem e deploy
+    #    - export DOCKER_VERSION=$(mvn help:evaluate -Dexpression=project.name -q -DforceStdout)
+    - export DOCKER_VERSION="$CI_PROJECT_NAME:$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed -e "s/[A-Z]//g" -e "s/-//g")"
+    - echo "REGISTRY_IMAGE=$CI_REGISTRY/$CI_PROJECT_NAMESPACE/$DOCKER_VERSION" >> build.env
+  #    - echo "REGISTRY_AGENT=$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:k8s-$CI_PROJECT_NAME-agent" >> build.env
+  artifacts:
+    paths:
+      - "target/"
+      - ".m2/repository/"
+      - "opt/apache-maven-3.8.8/"
+    expire_in: "2 hrs"
+    reports:
+      dotenv: build.env
+
+test:
+  stage: test
+  extends: build-job
+  script:
+    - mvn $MAVEN_CLI_OPTS test
+  dependencies:
+    - build-job
+
+deploy-docker:
+  stage: create
+  extends: build-job
+  script:
+    - ln -s /opt/apache-maven-3.8.8 /opt/maven
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - echo $REGISTRY_IMAGE
+    - mvn clean package $MAVEN_CLI_OPTS
+    - docker tag $(docker images|head -2|tail -1|awk '{print $1":"$2}') $REGISTRY_IMAGE
+    - docker push $REGISTRY_IMAGE
+    - cat .gitlab/cicd/app-dev.yml | envsubst > app-dev-temp.yml
+    - cat .gitlab/cicd/app.yml | envsubst > app-temp.yml
+  artifacts:
+    paths:
+      - app-temp.yml
+      - app-dev-temp.yml
+    expire_in: "2 hrs"
+  dependencies:
+    - build-job
+
+deploy-dev:
+  stage: deploy-dev
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  script:
+    - kubectl config get-contexts
+    - echo $CI_PROJECT_PATH
+    - kubectl config use-context $REGISTRY_AGENT
+    - kubectl config set-context --current --namespace=$NAMESPACE
+    - kubectl apply -f app-dev-temp.yml --validate=false
+  dependencies:
+    - deploy-docker
+    - build-job
+  only:
+    - develop
+  when: manual
+
+destroy-dev:
+  stage: deploy-dev
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  script:
+    - kubectl config get-contexts
+    - echo $CI_PROJECT_PATH
+    - kubectl config use-context $REGISTRY_AGENT
+    - kubectl config set-context --current --namespace=$NAMESPACE
+    - kubectl delete -f app-dev-temp.yml
+    - kubectl delete namespace $NAMESPACE
+  dependencies:
+    - deploy-docker
+    - build-job
+    - deploy-dev
+  only:
+    - develop
+  when: manual
+
+deploy-prd:
+  stage: deploy-prd
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  script:
+    - kubectl config get-contexts
+    - echo $CI_PROJECT_PATH
+    - kubectl config use-context $REGISTRY_AGENT
+    - kubectl config set-context --current --namespace=$NAMESPACE
+    - kubectl apply -f app-temp.yml --validate=false
+  dependencies:
+    - deploy-docker
+    - build-job
+  only:
+    - main
+  when: manual
+
+destroy-prd:
+  stage: deploy-prd
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  script:
+    - kubectl config get-contexts
+    - echo $CI_PROJECT_PATH
+    - kubectl config use-context $REGISTRY_AGENT
+    - kubectl config set-context --current --namespace=$NAMESPACE
+    - kubectl delete -f app-temp.yml
+    - kubectl delete namespace $NAMESPACE
+  dependencies:
+    - deploy-docker
+    - build-job
+    - deploy-prd
+  only:
+    - main
+  when: manual
+
+
+sonar-scan:
+  stage: sonar-scan
+  extends: .base_sonarcli
+  only:
+    - main
+    - develop

@@ -1,0 +1,14 @@
+Processo de deploy
+mvn clean install package
+
+docker push renanmarqueshering/soma-vendas:0.0.30
+
+Acessar o GCP -> https://console.cloud.google.com/kubernetes/workload/overview?project=hering-datalake-dev-350617
+
+Abrir o console no icone >. lado superior direito.
+
+executar o comando abaixo.
+docker pull renanmarqueshering/soma-vendas:0.0.30 && docker tag renanmarqueshering/soma-vendas:0.0.30 gcr.io/hering-datalake-dev-350617/soma/soma-vendas:0.0.30 && docker push gcr.io/hering-datalake-dev-350617/soma/soma-vendas:0.0.30
+
+PROD 
+docker pull renanmarqueshering/soma-vendas:0.0.30 && docker tag renanmarqueshering/soma-vendas:0.0.30 gcr.io/hrg-b2b-bpm-prd-348718/zeebe-prod/soma-vendas:0.0.30 && docker push gcr.io/hrg-b2b-bpm-prd-348718/zeebe-prod/soma-vendas:0.0.30
