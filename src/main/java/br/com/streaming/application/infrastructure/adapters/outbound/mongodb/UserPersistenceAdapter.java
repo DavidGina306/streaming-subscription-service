@@ -16,7 +16,6 @@ public class UserPersistenceAdapter implements UserRepositoryPort {
 
     @Override
     public User save(User user) {
-        // Converte Domínio -> Documento (Entrada)
         UserDocument document = new UserDocument(
             user.getId(),
             user.getName(),
@@ -25,7 +24,6 @@ public class UserPersistenceAdapter implements UserRepositoryPort {
 
         UserDocument saved = repository.save(document);
 
-        // Converte Documento -> Domínio (Saída)
         return new User(saved.getId(), saved.getName(), saved.getEmail());
     }
 

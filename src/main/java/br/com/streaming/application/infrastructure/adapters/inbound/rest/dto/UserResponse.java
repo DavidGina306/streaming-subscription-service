@@ -20,7 +20,6 @@ public class UserResponse {
     @Schema(description = "Registered email address", example = "david.oliveira@email.com")
     private final String email;
 
-    // Construtor que converte a Entidade de Domínio para o DTO de Resposta
     public UserResponse(User user) {
         this.id = user.getId();
         this.name = user.getName();

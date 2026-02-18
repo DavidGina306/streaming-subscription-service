@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import br.com.streaming.application.core.domain.Subscription;
 import br.com.streaming.application.core.enums.Plan;
 import br.com.streaming.application.ports.inbound.CreateSubscriptionUseCase;
-import br.com.streaming.application.ports.inbound.CancelSubscriptionUseCase; // Importante para o MockBean
+import br.com.streaming.application.ports.inbound.CancelSubscriptionUseCase; 
 
 @WebMvcTest(SubscriptionController.class)
 class SubscriptionControllerTest {
@@ -33,7 +33,7 @@ class SubscriptionControllerTest {
     private CreateSubscriptionUseCase createSubscriptionUseCase;
 
     @MockBean
-    private CancelSubscriptionUseCase cancelSubscriptionUseCase; // Resolve o erro de dependência insatisfeita
+    private CancelSubscriptionUseCase cancelSubscriptionUseCase; 
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -41,7 +41,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("Deve receber payload JSON e criar assinatura com sucesso")
     void shouldCreateSubscriptionFromPayload() throws Exception {
-        // GIVEN
         var userId = UUID.randomUUID();
         var payload = """
                 {
@@ -55,8 +54,7 @@ class SubscriptionControllerTest {
         when(createSubscriptionUseCase.execute(eq(userId), eq(Plan.PREMIUM)))
             .thenReturn(expectedSubscription);
 
-        // WHEN & THEN
-        mockMvc.perform(post("/v1/subscriptions") // Certifique-se que o caminho inclui o /api se configurado no properties
+        mockMvc.perform(post("/v1/subscriptions") 
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payload))
                 .andExpect(status().isCreated())

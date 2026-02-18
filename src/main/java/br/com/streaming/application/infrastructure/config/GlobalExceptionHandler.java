@@ -13,19 +13,16 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Captura erros de Regra de Negócio (ex: Assinatura duplicada)
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Object> handleBusinessException(BusinessException ex) {
         return buildResponse(ex.getMessage(), HttpStatus.BAD_REQUEST, "Regra de Negócio");
     }
 
-    // Captura erros de "Não Encontrado" (404)
     @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
     public ResponseEntity<Object> handleNotFound(org.springframework.web.server.ResponseStatusException ex) {
         return buildResponse("O recurso solicitado não foi encontrado.", HttpStatus.NOT_FOUND, "Não Encontrado");
     }
 
-    // Captura qualquer outro erro inesperado (500)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleGeneralException(Exception ex) {
         return buildResponse("Ocorreu um erro interno no servidor.", HttpStatus.INTERNAL_SERVER_ERROR, "Erro Interno");

@@ -3,7 +3,6 @@ package br.com.streaming.application.infrastructure.adapters.inbound.rest;
 
 import br.com.streaming.application.ports.inbound.CreateSubscriptionUseCase;
 import br.com.streaming.application.ports.inbound.CancelSubscriptionUseCase; // Novo Port
-import br.com.streaming.application.core.domain.Subscription;
 import br.com.streaming.application.infrastructure.adapters.inbound.rest.dto.SubscriptionRequest;
 import br.com.streaming.application.infrastructure.adapters.inbound.rest.dto.SubscriptionResponse;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-// ... outros imports
 import jakarta.validation.Valid;
 
 @RestController
@@ -32,8 +30,6 @@ public class SubscriptionController {
     @Operation(summary = "Cria uma nova assinatura")
     public ResponseEntity<SubscriptionResponse> create(@RequestBody @Valid SubscriptionRequest request) {
         var subscription = createSubscriptionUseCase.execute(request.getUserId(), request.getPlan());
-        
-        // Retornamos o DTO em vez da Entidade
         return ResponseEntity.status(HttpStatus.CREATED).body(new SubscriptionResponse(subscription));
     }
 

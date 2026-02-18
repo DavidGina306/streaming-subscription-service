@@ -18,7 +18,6 @@ public enum Plan {
         return price;
     }
     
-    // Helper method to validate plan strings if needed
     public static boolean isValid(String planName) {
         for (Plan p : Plan.values()) {
             if (p.name().equalsIgnoreCase(planName)) {

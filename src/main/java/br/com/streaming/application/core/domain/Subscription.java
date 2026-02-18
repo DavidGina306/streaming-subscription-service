@@ -34,7 +34,6 @@ public class Subscription {
     @Schema(description = "Contador de tentativas de renovação falhas", example = "0")
     private int renewalAttempts;
 
-    // Construtor para criação de nova assinatura (via Use Case)
     public Subscription(UUID userId, Plan plan) {
         this.id = UUID.randomUUID();
         this.userId = userId;
@@ -45,7 +44,6 @@ public class Subscription {
         this.renewalAttempts = 0;
     }
 
-    // Construtor completo para o Mapper (Recuperação do Banco)
     public Subscription(UUID id, UUID userId, Plan plan, LocalDate startDate,
             LocalDate expirationDate, SubscriptionStatus status, int renewalAttempts) {
         this.id = id;

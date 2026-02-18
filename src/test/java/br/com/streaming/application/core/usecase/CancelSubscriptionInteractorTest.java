@@ -31,7 +31,6 @@ class CancelSubscriptionInteractorTest {
     @Test
     @DisplayName("Deve cancelar assinatura com sucesso mantendo a data de expiração original")
     void shouldCancelSubscriptionSuccessfully() {
-        // GIVEN
         var id = UUID.randomUUID();
         var dataExpiracaoOriginal = LocalDate.now().plusDays(20);
         var subscription = new Subscription(
@@ -46,10 +45,8 @@ class CancelSubscriptionInteractorTest {
 
         when(repositoryPort.findById(id)).thenReturn(Optional.of(subscription));
 
-        // WHEN
         interactor.execute(id);
 
-        // THEN
         assertEquals(SubscriptionStatus.CANCELED, subscription.getStatus());
         assertEquals(dataExpiracaoOriginal, subscription.getExpirationDate(), "A data de expiração não deve mudar no cancelamento");
         verify(repositoryPort).save(subscription);
@@ -58,11 +55,8 @@ class CancelSubscriptionInteractorTest {
     @Test
     @DisplayName("Deve lançar BusinessException quando tentar cancelar ID inexistente")
     void shouldThrowExceptionWhenSubscriptionNotFound() {
-        // GIVEN
         var id = UUID.randomUUID();
         when(repositoryPort.findById(id)).thenReturn(Optional.empty());
-
-        // WHEN & THEN
         var exception = assertThrows(BusinessException.class, () -> interactor.execute(id));
         assertTrue(exception.getMessage().contains("Subscription not found"));
     }

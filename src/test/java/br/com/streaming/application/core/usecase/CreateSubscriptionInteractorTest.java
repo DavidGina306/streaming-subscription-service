@@ -34,15 +34,12 @@ class CreateSubscriptionInteractorTest {
     @Test
     @DisplayName("Deve lançar exceção quando o usuário já possui uma assinatura ativa")
     void shouldThrowExceptionWhenUserAlreadyHasActiveSubscription() {
-        // GIVEN
         var userId = UUID.randomUUID();
         var existingSubscription = new Subscription(userId, Plan.BASICO);
         
-        // Usando o seu método findActiveByUserId
         when(repositoryPort.findActiveByUserId(userId))
             .thenReturn(Optional.of(existingSubscription));
 
-        // WHEN & THEN
         var exception = assertThrows(BusinessException.class, () -> {
             interactor.execute(userId, Plan.PREMIUM);
         });

@@ -33,7 +33,7 @@ class RenewSubscriptionInteractorTest {
     @Mock
     private PaymentGatewayPort paymentPort;
     @Mock
-    private EventPublisherPort eventPort; // Nome deve bater com o campo no Interactor
+    private EventPublisherPort eventPort;
 
     @InjectMocks
     private RenewSubscriptionInteractor interactor;
