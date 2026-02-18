@@ -1,0 +1,44 @@
+@startuml
+' This PlantUML diagram is automatically generated and enhanced.
+' Comments below each action are incorporated into action labels.
+' Variables in {{name}} format are highlighted with bold/italic styling.
+'
+' For more information and usage instructions, see:
+' https://github.com/hzarsteck/puml-sd-multiline
+
+skinparam componentStyle uml2
+
+package "Infrastructure Layer (Adapters)" {
+    [SubscriptionController] as API
+    [MongoRepositoryAdapter] as DB_Adapter
+    [KafkaProducerAdapter] as Kafka_Adapter
+    [SubscriptionScheduler] as Cron
+}
+
+package "Application Layer (Ports)" {
+    interface "RenewSubscriptionUseCase" as In_Port
+    interface "SubscriptionRepositoryPort" as Out_Port_DB
+    interface "EventPublisherPort" as Out_Port_Event
+}
+
+package "Domain Layer (Core)" {
+    component [RenewSubscriptionInteractor] as Interactor
+    entity "Subscription" as Entity
+}
+
+API --> In_Port
+Cron --> In_Port
+In_Port -- Interactor
+Interactor -down-> Entity : manipulates
+Interactor -- Out_Port_DB
+Interactor -- Out_Port_Event
+
+Out_Port_DB -- DB_Adapter
+Out_Port_Event -- Kafka_Adapter
+
+database "MongoDB" as Mongo
+[Kafka Cluster] as Kafka
+
+DB_Adapter --> Mongo
+Kafka_Adapter --> Kafka
+@enduml

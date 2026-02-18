@@ -1,0 +1,38 @@
+@startuml
+autonumber
+
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign center
+
+actor "Scheduler" as Cron
+participant "RenewSubscription\nInteractor" as Core
+participant "PaymentGateway\nAdapter" as Payment
+database "MongoDB" as DB
+queue "Kafka Topic" as Kafka
+
+Cron -> Core : execute(subscriptionId)
+Core -> DB : findById(id)
+DB --> Core : subscription
+
+Core -> Payment : charge(userId, plan)
+
+alt Pagamento Sucesso
+    Payment --> Core : success
+    Core -> Core : subscription.renew()
+    Core -> DB : save(subscription)
+    Core -> Kafka : publish("subscription-renewed")
+else Pagamento Falha
+    Payment --> Core : failure
+    Core -> Core : subscription.recordPaymentFailure()
+    
+    alt Tentativas < 3
+        Core -> DB : save(subscription)
+        note right: Mantém status ACTIVE
+    else Tentativas >= 3
+        Core -> Core : status = SUSPENDED
+        Core -> DB : save(subscription)
+        Core -> Kafka : publish("subscription-suspended")
+    end
+end
+
+@enduml
